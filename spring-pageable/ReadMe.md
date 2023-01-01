@@ -1,6 +1,25 @@
 # Spring, Pageable, JPA
 
-Spring Data JPA, Pageable
+> ### Spring Data JPA Paging, Sort
+
+- 페이징과 정렬 파라미터
+  - 정렬 기능
+    - org.springframework.data.domain.Sort
+  - 페이징 기능
+    - org.springframework.data.domain.Pageable
+  - Pageable 인터페이스 구현체
+    - org.springframework.data.domain.PageRequest
+    - 페이지는 `0`부터 시작한다.
+
+
+- 반환 타입
+  - 추가 count 쿼리 결과를 포함하는 페이징
+    - org.springframework.data.domain.Page
+  - 추가 count 쿼리 없이 다음 페이지만 확인 가능
+    - org.springframework.data.domain.Slice
+    - 내부적으로 `limit + 1` 조회한다.
+  - 추가 count 쿼리 없이 결과만 반환한다.
+    - List (Java Collection)
 
 > ### Pageable, Pagination
 
@@ -11,6 +30,7 @@ Spring Data JPA, Pageable
 
 - Pageable
   - JPA에서는 `Pageable` 객체를 제공한다.
+    - org.springframework.data.domain.Pageable
   - 페이지 요청 정보를 편하게 사용할 수 있도록 해주는 객체이다.
 
 
@@ -165,10 +185,68 @@ public class PostController {
 - FallbackPage
   - 별도 어노테이션이 없다면 FallbackPage 설정으로 실행된다.
 
+> ### count 쿼리 분리
+
+- 전체 count 쿼리는 비용이 많이 든다.
+- 복잡한 sql에서 count 쿼리를 분리한다.
+  - 데이터는 left join
+  - 카운트는 left join 하지 않아도 된다.
+
+```java
+/**
+ * Hibernate:
+ *     select
+ *         p1_0.id,
+ *         p1_0.category,
+ *         p1_0.content,
+ *         p1_0.member_id,
+ *         p1_0.title
+ *     from
+ *         post p1_0
+ *     left join
+ *         member m1_0
+ *             on p1_0.member_id=m1_0.id offset ? rows fetch first ? rows only
+ * Hibernate:
+ *     select
+ *         count(p1_0.id)
+ *     from
+ *         post p1_0
+ *     left join
+ *         member m1_0
+ *             on p1_0.member_id=m1_0.id
+ */
+@Query(value = "select p from Post p left join Member m on p.member.id = m.id")
+Page<Post> findByCategoryV1(String category, Pageable pageable);
+```
+
+```java
+/**
+ * Hibernate: 
+ *     select
+ *         p1_0.id,
+ *         p1_0.category,
+ *         p1_0.content,
+ *         p1_0.member_id,
+ *         p1_0.title 
+ *     from
+ *         post p1_0 
+ *     left join
+ *         member m1_0 
+ *             on p1_0.member_id=m1_0.id offset ? rows fetch first ? rows only
+ * Hibernate: 
+ *     select
+ *         count(p1_0.id) 
+ *     from
+ *         post p1_0
+ */
+@Query(value = "select p from Post p left join Member m on p.member.id = m.id",
+        countQuery = "select count(p) from Post p")
+Page<Post> findByCategoryV2(String category, Pageable pageable);
+```
 
 ---
 
 ## 참고
 
-- [테코볼 - Pageable을 이용한 Pagination을 처리하는 다양한 방법
-  ](https://tecoble.techcourse.co.kr/post/2021-08-15-pageable/)
+- [테코볼 - Pageable을 이용한 Pagination을 처리하는 다양한 방법](https://tecoble.techcourse.co.kr/post/2021-08-15-pageable/)
+- 

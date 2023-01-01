@@ -1,6 +1,6 @@
-package com.hyena.springpageable.controller;
+package com.hyena.springpageable.domain.post.controller;
 
-import com.hyena.springpageable.response.PostResponse;
+import com.hyena.springpageable.domain.post.dto.PostResponse;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.GetMapping;
