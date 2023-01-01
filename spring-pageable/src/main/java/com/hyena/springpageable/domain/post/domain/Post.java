@@ -21,6 +21,9 @@ public class Post {
     @JoinColumn(name = "member_id")
     private Member member;
 
+    protected Post() {
+    }
+
     public Post(String title, String content, String category, Member member) {
         this.title = title;
         this.content = content;

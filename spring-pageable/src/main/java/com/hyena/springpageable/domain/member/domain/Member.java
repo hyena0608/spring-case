@@ -1,11 +1,10 @@
 package com.hyena.springpageable.domain.member.domain;
 
-import com.hyena.springpageable.domain.post.domain.Post;
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import lombok.Getter;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Getter
 @Entity
@@ -16,8 +15,8 @@ public class Member {
 
     private String name;
 
-    @OneToMany(mappedBy = "member")
-    List<Post> posts = new ArrayList<>();
+    protected Member() {
+    }
 
     public Member(String name) {
         this.name = name;

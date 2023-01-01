@@ -9,6 +9,8 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 @DataJpaTest
 class PostRepositoryTest {
 
@@ -52,6 +54,9 @@ class PostRepositoryTest {
 
         PageRequest pageRequest = PageRequest.of(0, 3);
         Page<Post> posts = postRepository.findByCategoryV1("잡담", pageRequest);
+
+        assertThat(posts.getTotalElements()).isEqualTo(6);
+        assertThat(posts.getTotalPages()).isEqualTo(2);
     }
 
     /**
@@ -85,5 +90,8 @@ class PostRepositoryTest {
 
         PageRequest pageRequest = PageRequest.of(0, 3);
         Page<Post> posts = postRepository.findByCategoryV2("잡담", pageRequest);
+
+        assertThat(posts.getTotalElements()).isEqualTo(6);
+        assertThat(posts.getTotalPages()).isEqualTo(2);
     }
 }

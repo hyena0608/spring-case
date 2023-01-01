@@ -244,9 +244,135 @@ Page<Post> findByCategoryV1(String category, Pageable pageable);
 Page<Post> findByCategoryV2(String category, Pageable pageable);
 ```
 
+> ### 페이지 번호 1부터 시작하기
+
+페이지 번호 1부터 시작하는 방법 두 가지를 알아보았다.
+
+1. PageableHandlerMethodArgumentResolverSupport에 oneIndexedParameters를 true로 설정하는 방법
+2. Custom Pageable, Custom Page를 만드는 방법
+
+
+- 첫 번째 방법
+  - PageableHandlerMethodArgumentResolverSupport
+    - oneIndexedParameters 를 true로 설정하는 방법
+    - 첫 시작 페이지가 `1 페이지`부터 시작한다.
+    - 간단하지만 `0 페이지`가 사라지면서 앞단 내용물도 사라지는 단점이 있다.
+
+```java
+package org.springframework.data.web;
+
+public abstract class PageableHandlerMethodArgumentResolverSupport {
+    // ...
+  
+    private boolean oneIndexedParameters = false;
+
+    public void setOneIndexedParameters(boolean oneIndexedParameters) {
+      this.oneIndexedParameters = oneIndexedParameters;
+    }
+    // ...
+}
+```
+
+- application.properties
+
+```properties
+spring.data.web.pageable.one-indexed-parameters=true
+```
+
+
+- 두 번째 방법 
+  - 페이지 번호를 1번부터 나올 수 있도록 커스텀한 PageableCustom 객체를 만든다.
+  - 요청은 `page=0`이지만 응답은 `page=1`로 나가는 방식이다.
+
+
+- 페이지 번호를 1 증가시켜 응답 한다.
+```java
+@Getter
+public class PageableCustom {
+
+    private boolean first;
+    private boolean last;
+    private boolean hasNext;
+    private int totalPages;
+    private long totalElements;
+    private int page;
+    private int size;
+
+    public PageableCustom(Page page) {
+    }
+
+    public PageableCustom(PageImpl page) {
+        this.first = page.isFirst();
+        this.last = page.isLast();
+        this.hasNext = page.hasNext();
+        this.totalPages = page.getTotalPages();
+        this.totalElements = page.getTotalElements();
+        this.page = page.getNumber() + 1;
+        this.size = page.getSize();
+    }
+}
+```
+
+```java
+@Getter
+public class PageCustomResponse<T> {
+
+    private List<T> stock;
+
+    private PageableCustom pageableCustom;
+
+    public PageCustomResponse(List<T> stock, Pageable pageable, long totalElement) {
+        this.stock = stock;
+        this.pageableCustom = new PageableCustom(new PageImpl<>(stock, pageable, totalElement));
+    }
+}
+```
+
+```java
+@GetMapping("/v2/posts")
+public PageCustomResponse<PostResponse> getPostsByCategoryV2(
+        String category,
+        Pageable pageable
+) {
+    Page<PostResponse> page = postService.findPostsByCategory(category, pageable);
+    return new PageCustomResponse<>(page.getContent(), page.getPageable(), page.getTotalElements());
+}
+```
+
+- 테스트에서 요청은 `page=0`이지만 응답은 `page=1`로 나오는 것을 확인할 수 있다.
+
+```java
+class PostControllerTest {
+  
+  // ...
+
+  @Test
+  void 게시글_커스텀_페이징_요청_응답_성공() throws Exception {
+    // given
+    final String category = "잡담";
+    final int page = 0;
+    final int size = 3;
+    final PageRequest pageRequest = PageRequest.of(page, size);
+    final Page<PostResponse> postResponse =
+            new PageImpl<>(postStockResponse, pageRequest, postStockResponse.size());
+
+    when(postService.findPostsByCategory(category, pageRequest))
+            .thenReturn(postResponse);
+
+    // when & then
+    mockMvc.perform(MockMvcRequestBuilders.get("/v2/posts")
+                    .param("category", "잡담")
+                    .param("page", "0")
+                    .param("size", "3")
+            )
+            .andDo(print())
+            .andExpect(jsonPath("pageableCustom.page").value(1));
+  }
+}
+```
+
 ---
 
 ## 참고
 
 - [테코볼 - Pageable을 이용한 Pagination을 처리하는 다양한 방법](https://tecoble.techcourse.co.kr/post/2021-08-15-pageable/)
-- 
