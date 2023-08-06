@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import static org.springframework.data.domain.Sort.Direction.DESC;
 
-@RestController
 @RequiredArgsConstructor
+@RestController
 public class PostController {
 
     private final PostService postService;

@@ -7,14 +7,16 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-@Service
 @RequiredArgsConstructor
+@Service
 public class PostServiceImpl implements PostService {
 
     private final PostRepository postRepository;
 
     @Override
-    public Page<PostResponse> findPostsByCategory(String category, Pageable pageable) {
-        return postRepository.findByCategoryV2(category, pageable).map(PostResponse::of);
+    public Page<PostResponse> findPostsByCategory(final String category, final Pageable pageable) {
+
+        return postRepository.findByCategoryV2(category, pageable)
+                .map(PostResponse::of);
     }
 }

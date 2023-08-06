@@ -1,32 +1,35 @@
 package com.hyena.springpageable.domain.post.controller;
 
+import com.hyena.springpageable.config.RestdocsConfig;
 import com.hyena.springpageable.domain.member.domain.Member;
 import com.hyena.springpageable.domain.post.domain.Post;
 import com.hyena.springpageable.domain.post.dto.PostResponse;
 import com.hyena.springpageable.domain.post.service.PostService;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders;
 
 import java.util.List;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.restdocs.payload.JsonFieldType.BOOLEAN;
+import static org.springframework.restdocs.payload.JsonFieldType.NUMBER;
+import static org.springframework.restdocs.payload.JsonFieldType.STRING;
+import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
+import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.restdocs.request.RequestDocumentation.queryParameters;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-class PostControllerTest {
-
-    @Autowired
-    private MockMvc mockMvc;
+@WebMvcTest(PostController.class)
+class PostControllerTest extends RestdocsConfig {
 
     @MockBean
     private PostService postService;
@@ -40,25 +43,37 @@ class PostControllerTest {
     );
 
     @Test
-    void 게시글_커스텀_페이징_요청_응답_성공() throws Exception {
-        // given
-        final String category = "잡담";
-        final int page = 0;
-        final int size = 3;
-        final PageRequest pageRequest = PageRequest.of(page, size);
-        final Page<PostResponse> postResponse =
-                new PageImpl<>(postStockResponse, pageRequest, postStockResponse.size());
+    void v1() throws Exception {
+        when(postService.findPostsByCategory(anyString(), any()))
+                .thenReturn(new PageImpl<>(postStockResponse, PageRequest.of(10, 10), 10));
 
-        when(postService.findPostsByCategory(category, pageRequest))
-                .thenReturn(postResponse);
-
-        // when & then
-        mockMvc.perform(MockMvcRequestBuilders.get("/v2/posts")
-                        .param("category", "잡담")
-                        .param("page", "0")
-                        .param("size", "3")
-                )
+        mockMvc.perform(RestDocumentationRequestBuilders.get("/v1/posts")
+                        .queryParam("category", "잡담")
+                        .queryParam("page", "10")
+                        .queryParam("size", "10")
+                        .contentType(APPLICATION_JSON)
+                        .characterEncoding(UTF_8))
                 .andDo(print())
-                .andExpect(jsonPath("pageableCustom.page").value(1));
+                .andDo(restDocs.document(
+                        queryParameters(
+                                parameterWithName("category").description(""),
+                                parameterWithName("page").description(""),
+                                parameterWithName("size").description("")
+                        ),
+                        responseFields(
+                                fieldWithPath("stock.[].title").type(STRING).description(""),
+                                fieldWithPath("stock.[].content").type(STRING).description(""),
+                                fieldWithPath("stock.[].category").type(STRING).description(""),
+                                fieldWithPath("stock.[].member.id").type(STRING).description("").optional(),
+                                fieldWithPath("stock.[].member.name").type(STRING).description(""),
+                                fieldWithPath("pageableCustom.first").type(BOOLEAN).description(""),
+                                fieldWithPath("pageableCustom.last").type(BOOLEAN).description(""),
+                                fieldWithPath("pageableCustom.hasNext").type(BOOLEAN).description(""),
+                                fieldWithPath("pageableCustom.totalPages").type(NUMBER).description(""),
+                                fieldWithPath("pageableCustom.totalElements").type(NUMBER).description(""),
+                                fieldWithPath("pageableCustom.page").type(NUMBER).description(""),
+                                fieldWithPath("pageableCustom.size").type(NUMBER).description("")
+                        )
+                ));
     }
 }

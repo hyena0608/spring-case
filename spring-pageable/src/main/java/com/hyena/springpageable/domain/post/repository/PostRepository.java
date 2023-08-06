@@ -8,10 +8,18 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
 
-    @Query(value = "select p from Post p left join Member m on p.member.id = m.id")
-    Page<Post> findByCategoryV1(String category, Pageable pageable);
+    @Query(value = """
+            select p 
+            from Post p 
+            left join Member m on p.member.id = m.id
+            """)
+    Page<Post> findByCategoryV1(final String category, final Pageable pageable);
 
-    @Query(value = "select p from Post p left join Member m on p.member.id = m.id",
+    @Query(value = """
+            select p 
+            from Post p 
+            left join Member m on p.member.id = m.id
+            """,
             countQuery = "select count(p) from Post p")
-    Page<Post> findByCategoryV2(String category, Pageable pageable);
+    Page<Post> findByCategoryV2(final String category, final Pageable pageable);
 }
